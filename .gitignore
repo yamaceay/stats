@@ -2,3 +2,4 @@
 *.env
 **/pycache/**
 .venv
+.ruff_cache
