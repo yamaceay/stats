@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Tuple
 from scipy import stats
 import statsmodels.stats.power as smp
@@ -9,6 +10,12 @@ from src.utils import Group, Experiment, CheckAssumptionsResult, TestResult
 # Configure logging to save results
 logging.basicConfig(filename='t_test_results.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
+@dataclass
+class TTestCheckAssumptionsResult(CheckAssumptionsResult):
+    normality: dict
+    variance_homogeneity: str
+    variance_p: float
+
 class TTestExperiment(Experiment):
     def check_assumptions(self) -> CheckAssumptionsResult:
         data_arrays = [group.get_data_array() for group in self.groups]
@@ -19,7 +26,7 @@ class TTestExperiment(Experiment):
         # Homogeneity of variance test
         variance_pvalue = stats.levene(*data_arrays).pvalue
 
-        return CheckAssumptionsResult(
+        return TTestCheckAssumptionsResult(
             normality={name: "Pass" if p > 0.05 else "Fail" for name, p in normality_results.items()},
             variance_homogeneity="Pass" if variance_pvalue > 0.05 else "Fail",
             variance_p=round(variance_pvalue, 3)

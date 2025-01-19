@@ -8,9 +8,7 @@ logging.basicConfig(filename='statistical_tests.log', level=logging.INFO, format
 
 @dataclass
 class CheckAssumptionsResult:
-    normality: dict
-    variance_homogeneity: str
-    variance_p: float
+    pass
 
 @dataclass
 class TestResult:
