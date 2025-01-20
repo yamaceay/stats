@@ -63,7 +63,15 @@ To set up the project using `uv` and `astral`, follow these steps:
   ruff check
   ```
 
-4. **Run the T-Test Experiment:**
+4. **Optional: Add OpenAI Key**
+
+  If you plan to use the OpenAI API for generating text, you can add your API key to the `.env` file:
+
+  ```sh
+  OPENAI_API=your-api-key
+  ``` 
+
+5. **Run the T-Test Experiment:**
 
   ```sh
   uv run -m src.ttest
