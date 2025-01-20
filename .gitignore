@@ -1,5 +1,5 @@
 *.log
 *.env
-**/pycache/**
+__pycache__
 .venv
 .ruff_cache

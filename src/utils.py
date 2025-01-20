@@ -84,6 +84,21 @@ class ExperimentResults:
                 f"  Bootstrap CI: {self.bootstrap_CI}\n"
                 f"  Conclusion: {self.conclusion}")
 
+@dataclass
+class AggregatedExperimentResults:
+    bonferroni_corrected_alpha: float
+    significant_results: int
+    num_experiments: int
+    overall_conclusion: str
+
+    def __str__(self
+                ):
+        return (f"AggregatedExperimentResults:\n"
+                f"  Bonferroni Corrected Alpha: {self.bonferroni_corrected_alpha}\n"
+                f"  Significant Results: {self.significant_results}\n"
+                f"  Number of Experiments: {self.num_experiments}\n"
+                f"  Overall Conclusion: {self.overall_conclusion}")
+
 class Experiment:
     def __init__(self, groups: List[Group], test_type: str, alpha=0.05, power=0.8, confidence=0.95, bootstrap_confidence=0.95, correct_alpha=False, num_experiments=1):
         self.groups = groups
@@ -122,6 +137,7 @@ class Experiment:
         )
         logging.info(f"Pre-registered experiment: \n{experiment_info}")
         print(f"Experiment pre-registered: \n{experiment_info}")
+        return experiment_info
 
     def bootstrap_analysis(self, num_bootstraps=1000) -> BootstrapAnalysisResult:
         data_arrays = [group.get_data_array() for group in self.groups]
@@ -135,9 +151,34 @@ class Experiment:
             bootstrap_mean_diff=float(np.mean(boot_diffs)),
             bootstrap_CI=(round(ci_lower, 3), round(ci_upper, 3))
         )
+    
+    def aggregate_results(self, p_values: List[float], num_experiments: int) -> AggregatedExperimentResults:
+        # Bonferroni Correction
+        bonferroni_corrected_alpha = 1 - (1 - self.alpha) ** num_experiments
+
+        # Determine if overall result is significant
+        significant_results = sum(1 for p in p_values if p < bonferroni_corrected_alpha)
+        overall_conclusion = "Significant" if significant_results > 0 else "Not Significant"
+
+        aggregated_results = AggregatedExperimentResults(
+            bonferroni_corrected_alpha=bonferroni_corrected_alpha,
+            significant_results=significant_results,
+            num_experiments=num_experiments,
+            overall_conclusion=overall_conclusion
+        )
+
+        print(f"\nBonferroni Corrected Alpha: {bonferroni_corrected_alpha:.5f}")
+        print(f"Number of significant results: {significant_results}/{num_experiments}")
+        print(f"Overall Conclusion: {overall_conclusion}")
+
+        # Logging results
+        logging.info(aggregated_results)
+
+        return aggregated_results
 
     def run_experiment_multiple_times(self, fetch_data: Callable[[str, int], float], num_experiments=5, num_data_points=100) -> None:
         p_values = []
+        experiment_results_list = []
         for i in range(num_experiments):
             for group in self.groups:
                 group.data.clear()
@@ -162,21 +203,8 @@ class Experiment:
                 conclusion=results.conclusion
             )
             print(experiment_results)
+            experiment_results_list.append(experiment_results)
 
-        # Bonferroni Correction
-        bonferroni_corrected_alpha = 1 - (1 - self.alpha) ** num_experiments
-
-        # Determine if overall result is significant
-        significant_results = sum(1 for p in p_values if p < bonferroni_corrected_alpha)
-        overall_conclusion = "Significant" if significant_results > 0 else "Not Significant"
-
-        print(f"\nBonferroni Corrected Alpha: {bonferroni_corrected_alpha:.5f}")
-        print(f"Number of significant results: {significant_results}/{num_experiments}")
-        print(f"Overall Conclusion: {overall_conclusion}")
-
-        # Logging results
-        logging.info({
-            "bonferroni_corrected_alpha": bonferroni_corrected_alpha,
-            "significant_results": significant_results,
-            "overall_conclusion": overall_conclusion
-        })
+        # Call the aggregate_results method
+        aggregated_results = self.aggregate_results(p_values, num_experiments)
+        return experiment_results_list, aggregated_results

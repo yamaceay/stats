@@ -6,6 +6,7 @@ import numpy as np
 import logging
 import random
 from src.utils import Group, Experiment, CheckAssumptionsResult, TestResult
+from src.agent import generate_report
 
 # Configure logging to save results
 logging.basicConfig(filename='t_test_results.log', level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -95,5 +96,10 @@ if __name__ == "__main__":
     num_experiments=10
     alpha=0.1 / num_experiments
     experiment = TTestExperiment([group1, group2], "ttest", alpha=alpha)
-    experiment.pre_register("Group B will have a higher average score than Group A")
-    experiment.run_experiment_multiple_times(fetch_data, num_experiments=num_experiments)
+    experiment_info = experiment.pre_register("Group B will have a higher average score than Group A")
+    experiment_results, aggregated_experiment_results = experiment.run_experiment_multiple_times(fetch_data, num_experiments=num_experiments)
+
+    summary_input = f"**Experiment Hypothesis:** {experiment_info.hypothesis}"
+    summary_input += "\n\n**Experiment Results:**" + "\n\n".join(str(result) for result in experiment_results)
+    summary_input += f"\n\n**Overall conclusion:**\n\n {aggregated_experiment_results.overall_conclusion}"
+    generate_report(summary_input)
